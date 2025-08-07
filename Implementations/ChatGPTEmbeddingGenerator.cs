@@ -51,4 +51,5 @@ public class ChatGPTEmbeddingGenerator : IEmbeddingGenerator
         }
         throw new InvalidOperationException("Failed to retrieve embedding from OpenAI API response.");
     }
+
 }

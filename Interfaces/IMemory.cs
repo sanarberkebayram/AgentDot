@@ -6,6 +6,5 @@ public interface IMemory
 {
     void AddMessage(ChatMessage message);
     Task<IReadOnlyList<ChatMessage>> GetHistoryAsync();
-    Task<IReadOnlyList<ChatMessage>> FindRelevantMessagesAsync(string query, int maxResults);
-    Task SummarizeAsync();
+    void ChangeSystemPrompt(string systemPrompt);
 }

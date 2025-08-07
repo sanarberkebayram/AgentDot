@@ -1,3 +1,5 @@
+using DotAgent.Core.Tool;
+
 namespace DotAgent.Interfaces;
 
 public interface IAgent
