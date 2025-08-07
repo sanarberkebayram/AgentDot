@@ -9,7 +9,7 @@ public class Program
         // or set it as an environment variable named OPENAI_API_KEY.
         // For example: Environment.SetEnvironmentVariable("OPENAI_API_KEY", "sk-...");
         string? openAiApiKey =
-            "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";
+            "";
 
         if (string.IsNullOrEmpty(openAiApiKey))
         {
