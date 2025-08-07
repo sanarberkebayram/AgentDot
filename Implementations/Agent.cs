@@ -50,68 +50,135 @@ public class Agent : IAgent
 
         foreach (var step in plan.Steps)
         {
-            if (step is ToolStep toolStep)
+            var stepResult = await ExecuteStep(step);
+            Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.Assistant, Content = stepResult });
+            Logger.LogAsync("Executing Step", $"Step: {step.Prompt}\nResult: {stepResult}\nRationale: {step.Rationale}\n");
+
+            if (IsToolCalling(stepResult))
             {
-                var tool = Tools.FirstOrDefault(t => t.Name == toolStep.ToolName);
-                if (tool == null)
+                var toolCalls = GetToolCalls(stepResult);
+                foreach (var call in toolCalls)
                 {
-                    // Log error: Tool not found
-                    await Logger.LogAsync($"Tool Not Found for {Id}", $"Attempted to use tool '{toolStep.ToolName}' but it was not found.");
-                    Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = $"Error: Tool '{toolStep.ToolName}' not found." });
-                    continue;
+                    var tool = Tools.FirstOrDefault(t => t.Name == call.ToolName);
+                    if (tool == null)
+                    {
+                        await Logger.LogAsync($"Tool Not Found for {Id}", $"Attempted to use tool '{call.ToolName}' but it was not found.");
+                        Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = $"Error: Tool '{call.ToolName}' not found." });
+                        continue;
+                    }
+                    
+                    using var paramDoc = JsonDocument.Parse(call.ParametersJson);
+                    var parametersElement = paramDoc.RootElement;
+                    
+                    var validationResult = ValidateToolParameters(tool, parametersElement);
+                    var retries = 0;
+                    const int maxRetries = 3;
+
+                    while (!validationResult.IsValid && retries < maxRetries)
+                    {
+                        await Logger.LogAsync($"Tool Validation Failure for {Id}", $"Tool: {tool.Name}\nInvalid Parameters: {parametersElement}\nError: {validationResult.ErrorMessage}\nRetries left: {maxRetries - retries}");
+                        Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = $"Tool parameter validation failed for {tool.Name}: {validationResult.ErrorMessage}. Please provide valid parameters." });
+                        // Re-prompt the LLM to correct the parameters
+                        var correctionPrompt = $"The previous attempt to call tool '{tool.Name}' failed due to invalid parameters. " +
+                                               $"Error: {validationResult.ErrorMessage}. " +
+                                               $"Original goal: {input}. " +
+                                               $"Please provide the correct parameters for tool '{tool.Name}'.";
+
+                        var correctedToolCall = await _connector.InvokeToolCallingAsync(correctionPrompt, Tools, await Memory.GetHistoryAsync());
+                        var newParameters =  correctedToolCall.Parameters; // Update parameters with corrected ones
+                        validationResult = ValidateToolParameters(tool, newParameters);
+                        call.ParametersJson = newParameters.ToString();
+                        retries++;
+                    }
+                    
+                    if (!validationResult.IsValid)
+                    {
+                        await Logger.LogAsync($"Tool Validation Failure for {Id}", $"Tool: {tool.Name}\nInvalid Parameters: {parametersElement.ToString()}\nError: {validationResult.ErrorMessage}\nMax retries reached.");
+                        Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = $"Tool parameter validation failed for {tool.Name}: {validationResult.ErrorMessage}. Max retries reached." });
+                        return $"Tool parameter validation failed for {tool.Name}: {validationResult.ErrorMessage}. Max retries reached.";
+                    }
+                    
+                    await Logger.LogAsync($"Tool Execution for {Id}", $"Tool: {tool.Name}\nParameters: {parametersElement}");
+                    var toolOutput = await tool.ExecuteAsync(parametersElement);
+                    Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = toolOutput });
+                    await Logger.LogAsync($"Tool Output for {Id}", $"Tool: {tool.Name} Output: {toolOutput}");
+                    finalResult = toolOutput;
                 }
-
-                // Parameter validation and correction loop
-                var validationResult = ValidateToolParameters(tool, toolStep.Parameters);
-                var retries = 0;
-                const int maxRetries = 3;
-
-                while (!validationResult.IsValid && retries < maxRetries)
-                {
-                    await Logger.LogAsync($"Tool Validation Failure for {Id}", $"Tool: {tool.Name}\nInvalid Parameters: {toolStep.Parameters.ToString()}\nError: {validationResult.ErrorMessage}\nRetries left: {maxRetries - retries}");
-                    Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = $"Tool parameter validation failed for {tool.Name}: {validationResult.ErrorMessage}. Please provide valid parameters." });
-                    // Re-prompt the LLM to correct the parameters
-                    var correctionPrompt = $"The previous attempt to call tool '{tool.Name}' failed due to invalid parameters. " +
-                                           $"Error: {validationResult.ErrorMessage}. " +
-                                           $"Original goal: {input}. " +
-                                           $"Please provide the correct parameters for tool '{tool.Name}'.";
-
-                    var correctedToolCall = await _connector.InvokeToolCallingAsync(correctionPrompt, Tools, await Memory.GetHistoryAsync());
-                    toolStep.Parameters = correctedToolCall.Parameters; // Update parameters with corrected ones
-                    validationResult = ValidateToolParameters(tool, toolStep.Parameters);
-                    retries++;
-                }
-
-                if (!validationResult.IsValid)
-                {
-                    await Logger.LogAsync($"Tool Validation Failure for {Id}", $"Tool: {tool.Name}\nInvalid Parameters: {toolStep.Parameters.ToString()}\nError: {validationResult.ErrorMessage}\nMax retries reached.");
-                    Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = $"Tool parameter validation failed for {tool.Name}: {validationResult.ErrorMessage}. Max retries reached." });
-                    return $"Tool parameter validation failed for {tool.Name}: {validationResult.ErrorMessage}. Max retries reached.";
-                }
-
-                await Logger.LogAsync($"Tool Execution for {Id}", $"Tool: {tool.Name}\nParameters: {toolStep.Parameters.ToString()}");
-                var toolOutput = await tool.ExecuteAsync(toolStep.Parameters);
-                Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = toolOutput });
-                await Logger.LogAsync($"Tool Output for {Id}", $"Tool: {tool.Name} Output: {toolOutput}");
-                finalResult = toolOutput;
-            }
-            else if (step is TextGenerationStep textGenerationStep)
-            {
-                await Logger.LogAsync($"Text Generation for {Id}", $"Prompt: {textGenerationStep.Prompt}");
-                var generatedText = await _connector.GenerateTextAsync(textGenerationStep.Prompt ?? string.Empty, await Memory.GetHistoryAsync());
-                await Logger.LogAsync($"Generated Text for {Id}", $"Text: {generatedText}");
-                Memory.AddMessage(new ChatMessage { Role = ChatMessageRole.User, Content = generatedText });
-                finalResult = generatedText;
             }
         }
 
         return finalResult ?? "No result generated.";
     }
 
+    private async Task<string> ExecuteStep(PlanStep step)
+    {
+        Memory.AddMessage(
+            new ChatMessage 
+            { Role = ChatMessageRole.User,
+                Content = $"Current Step Goal: {step.Prompt}\n" +
+                          $" Rationale: {step.Rationale}\n" +
+                          $"If your goal is to generate text, generate needed content\n" +
+                          $"If your want to use a tool, provide the tool name and parameters to the tool\n" +
+                          $"Multiple tool usage is allowed.\n" +
+                          $"Example tool step: {{ \"toolName\": \"SearchTool\", \"parameters\": {{ \"query\": \"search term\" }}}}\n" +
+                          "Call tool step as a JSON array. Do not use ```` or ```json` tags. "
+            });
+        var generatedText = await _connector!.GenerateTextAsync(string.Empty, await Memory.GetHistoryAsync());
+        return generatedText;
+    }
+    private bool IsToolCalling(string stepResult )
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(stepResult);
+            return doc.RootElement.EnumerateArray().Any(element => element.TryGetProperty("toolName", out var _));
+        }
+        catch 
+        {
+            return false;
+        }
+    }
+    private ToolCall[] GetToolCalls(string stepResult)
+    {
+        var toolCalls = new List<ToolCall>();
+        using var doc = JsonDocument.Parse(stepResult);
+        var root = doc.RootElement;
+
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var element in root.EnumerateArray())
+            {
+                if (!element.TryGetProperty("toolName", out var _)) continue;
+
+                var toolCall = new ToolCall
+                {
+                    ToolName = element.GetProperty("toolName").GetString(),
+                    ParametersJson = element.GetProperty("parameters").GetRawText(),
+                    Rationale = element.TryGetProperty("rationale", out var rationaleProp) ? rationaleProp.GetString() : null
+                };
+                toolCalls.Add(toolCall);
+            }
+        }
+        else if (root.ValueKind == JsonValueKind.Object)
+        {
+            if (root.TryGetProperty("toolName", out var _))
+            {
+                var toolCall = new ToolCall
+                {
+                    ToolName = root.GetProperty("toolName").GetString(),
+                    ParametersJson = root.GetProperty("parameters").GetRawText(),
+                    Rationale = root.TryGetProperty("rationale", out var rationaleProp) ? rationaleProp.GetString() : null
+                };
+                toolCalls.Add(toolCall);
+            }
+        }
+
+        return toolCalls.ToArray();
+    }
+
     private (bool IsValid, string ErrorMessage) ValidateToolParameters(ITool tool, JsonElement parameters)
     {
         var requiredParameters = tool.GetParameters().Where(p => p.IsRequired).ToList();
-
         foreach (var requiredParam in requiredParameters)
         {
             if (requiredParam.Name == null || !parameters.TryGetProperty(requiredParam.Name, out var property))

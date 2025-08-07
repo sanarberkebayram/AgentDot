@@ -45,10 +45,7 @@ public class Program
         orchestrator.Connect(llmConnector);
 
         // 5. Execute a complex task
-        string userRequest = "Write 3 different poem from 3 different authors to poems folder." +
-                             " Name them as: author1_poem1.txt, author2_poem2.txt, author3_poem3.txt with their names in the file names." +
-                             " The poems should be at most 100 words. " +
-                             "Then get random one word for each poem and write it in random_poem.txt and save it to the same folder.";
+        string userRequest = "write a txt file 'berke.txt' with the contents: Hello World!" ;
         Console.WriteLine($"Executing task: {userRequest}\n");
         string result = await orchestrator.ExecuteAsync(userRequest);
 
