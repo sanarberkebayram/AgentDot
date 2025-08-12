@@ -2,6 +2,8 @@ namespace DotAgent.Core.Prompts;
 
 public static class AgentPrompts
 {
+    public const string AGENT_TOOL_PROMPT = @"Invokes the {{AGENT_ID}} agent. 
+System Prompt: {{SYSTEM_PROMPT}}";
     public const string AGENT_PROMPT = @"
 You are a versatile AI agent that generates structured JSON responses to interact with tools and users. 
 Your specialized system prompt is as follows:

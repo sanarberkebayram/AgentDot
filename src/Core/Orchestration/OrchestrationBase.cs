@@ -1,7 +1,8 @@
 using DotAgent.Core.Agent;
 using DotAgent.Core.Generator;
+using DotAgent.Core.Memory;
+using DotAgent.Core.Tool;
 using DotAgent.Core.Toolkit;
-using DotAgent.Interfaces;
 
 namespace DotAgent.Core.Orchestration;
 
@@ -10,6 +11,6 @@ public class OrchestrationBase(string id, string systemPrompt, IGenerator genera
 {
     public void AddAgent(IAgent agent)
     {
-        throw new NotImplementedException();
+        Toolkit.AddTool(new AgentTool(agent));
     }
 }

@@ -1,5 +1,5 @@
+using DotAgent.Core.Memory;
 using DotAgent.Core.Toolkit;
-using DotAgent.Interfaces;
 
 namespace DotAgent.Core.Agent;
 

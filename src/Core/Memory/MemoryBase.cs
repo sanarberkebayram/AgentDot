@@ -1,8 +1,7 @@
-using DotAgent.Implementations;
 using DotAgent.Logging;
 using DotAgent.Models;
 
-namespace DotAgent.Interfaces;
+namespace DotAgent.Core.Memory;
 
 public class MemoryBase : IMemory
 {

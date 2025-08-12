@@ -1,6 +1,6 @@
 using DotAgent.Models;
 
-namespace DotAgent.Interfaces;
+namespace DotAgent.Core.Memory;
 
 public interface IMemory
 {

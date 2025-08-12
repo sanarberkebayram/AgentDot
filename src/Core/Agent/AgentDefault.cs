@@ -1,8 +1,7 @@
 using DotAgent.Core.Generator;
+using DotAgent.Core.Memory;
 using DotAgent.Core.Models;
 using DotAgent.Core.Toolkit;
-using DotAgent.Implementations;
-using DotAgent.Interfaces;
 using DotAgent.Logging;
 using DotAgent.Models;
 
