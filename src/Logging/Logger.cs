@@ -1,7 +1,4 @@
-using System.IO;
-using System.Threading.Tasks;
-
-namespace DotAgent.Implementations;
+namespace DotAgent.Logging;
 
 public static class Logger
 {
@@ -19,9 +16,16 @@ public static class Logger
         SessionLogFileName = Path.Combine(LogDirectory, $"session_log_{DateTime.Now:yyyyMMdd_HHmmss}.md");
     }
 
-    public static async Task LogAsync(string title, string content)
+    public static async Task LogAsync(LogType logType, string title, string content)
     {
-        var logContent = $"# {title}\n\n{content}{LogSeparator}";
+        var logContent = $"#[{logType.ToString().ToUpper()}] {title}:\n{content}{LogSeparator}";
         await File.AppendAllTextAsync(SessionLogFileName, logContent);
+    }
+    
+    public enum LogType
+    {
+        Info,
+        Warning,
+        Error
     }
 }
