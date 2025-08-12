@@ -1,3 +1,5 @@
+using DotAgent.Core.Generator;
+using DotAgent.Core.Models;
 using DotAgent.Core.Prompts;
 using DotAgent.Core.Toolkit;
 using DotAgent.Interfaces;
@@ -10,14 +12,16 @@ public abstract class AgentBase : IAgent
     public string SystemPrompt { get; set; }
     public IMemory Memory { get; }
     public IToolkit Toolkit { get; }
+    protected readonly IGenerator Generator;
     
     
-    protected AgentBase(string id, string systemPrompt, IMemory memory, IToolkit toolkit)
+    protected AgentBase(string id, string systemPrompt, IMemory memory, IToolkit toolkit, IGenerator generator)
     {
         Id = id;
         Toolkit = toolkit;
         Memory = memory;
         SystemPrompt = BuildAgentPrompt(systemPrompt);
+        Generator = generator;
     }
 
     private string BuildAgentPrompt(string systemPrompt)
@@ -28,4 +32,6 @@ public abstract class AgentBase : IAgent
     }
 
     public abstract Task<string> ProcessMessageAsync(string message);
+    public abstract Task<string> HandleGeneratorResponse(GenerationResponse response);
+    
 }

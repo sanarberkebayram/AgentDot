@@ -3,6 +3,7 @@ using DotAgent.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DotAgent.Core.Tool;
+using DotAgent.Logging;
 
 namespace DotAgent.Implementations;
 
