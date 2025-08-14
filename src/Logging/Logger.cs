@@ -19,6 +19,7 @@ public static class Logger
     public static async Task LogAsync(LogType logType, string title, string content)
     {
         var logContent = $"#[{logType.ToString().ToUpper()}] {title}:\n{content}{LogSeparator}";
+        Console.WriteLine(logContent);
         await File.AppendAllTextAsync(SessionLogFileName, logContent);
     }
     

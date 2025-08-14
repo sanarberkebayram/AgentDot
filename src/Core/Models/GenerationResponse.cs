@@ -12,7 +12,8 @@ public class GenerationResponse
 {
     public ResponseType Type { get; set; }
     public FunctionCall[] FunctionCalls { get; set; }
-    public string Message { get; set; }
+    public string Message { get; set; } = "";
+    public string Error { get; set; } = "";
 }
 
 
