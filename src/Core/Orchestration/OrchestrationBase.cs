@@ -6,9 +6,23 @@ using DotAgent.Core.Toolkit;
 
 namespace DotAgent.Core.Orchestration;
 
-public class OrchestrationBase(string id, string systemPrompt, IGenerator generator, IMemory? memory, IToolkit? toolkit) :
-    AgentDefault(id, systemPrompt, generator, memory, toolkit), IOrchestration
+public class OrchestrationBase : AgentDefault, IOrchestration
 {
+    public OrchestrationBase(string id, string systemPrompt, IGenerator generator, IMemory? memory, IToolkit? toolkit)
+     : base(id, systemPrompt, generator, memory, toolkit)
+    {
+    }
+
+    public OrchestrationBase(string systemPrompt, IGenerator generator)
+        : base(Guid.NewGuid().ToString(), systemPrompt, generator, null, null)
+    {
+    }
+
+    public OrchestrationBase(IGenerator generator)
+        : base(Guid.NewGuid().ToString(), Prompts.OrchestrationPrompt.ORCHESTRATION_PROMPT, generator, null, null)
+    {
+    }
+
     public void AddAgent(IAgent agent)
     {
         Toolkit.AddTool(new AgentTool(agent));

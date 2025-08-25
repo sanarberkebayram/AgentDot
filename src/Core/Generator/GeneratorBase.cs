@@ -1,6 +1,5 @@
 using DotAgent.Core.Models;
 using DotAgent.Logging;
-using DotAgent.Models;
 
 namespace DotAgent.Core.Generator;
 
@@ -8,7 +7,7 @@ public abstract class GeneratorBase : IGenerator
 {
     public GeneratorMode Mode { get; set; }
     private readonly bool _log;
-    
+
 
     public GeneratorBase(bool log = false, GeneratorMode mode = GeneratorMode.OnlyText)
     {
@@ -16,11 +15,11 @@ public abstract class GeneratorBase : IGenerator
         _log = log;
     }
 
-    public async Task<GenerationResponse> GenerateAsync(IReadOnlyList<ChatMessage> history)
+    public async Task<GenerationResponse> GenerateAsync(GeneratorParams @params)
     {
         try
         {
-            return await GenerateAsyncInternal(history);
+            return await GenerateResponse(@params);
         }
         catch (Exception ex)
         {
@@ -29,12 +28,12 @@ public abstract class GeneratorBase : IGenerator
                     Logger.LogType.Error,
                     $"Generator Failed",
                     $"{ex.Message} with message history:\n" +
-                    $"{string.Join("\n", history.Select(m => $"{m.Role}: {m.Content} \n"))}"+
+                    $"{string.Join("\n", @params.Messages.Select(m => $"{m.Role}: {m.Content} \n"))}" +
                     $"Stack Trace: {ex.StackTrace}"
                 );
             throw;
         }
     }
-    
-    protected abstract Task<GenerationResponse> GenerateAsyncInternal(IReadOnlyList<ChatMessage> history);
+
+    protected abstract Task<GenerationResponse> GenerateResponse(GeneratorParams @params);
 }

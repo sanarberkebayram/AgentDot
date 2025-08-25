@@ -6,7 +6,7 @@ namespace DotAgent.Core.Util;
 
 public static class JsonUtilities
 {
-    public static string GenerateSchema(Type type,string name = null, string description = null)
+    public static string GenerateSchema(Type type,string name, string description)
     {
         ArgumentNullException.ThrowIfNull(type);
 
