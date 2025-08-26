@@ -7,7 +7,7 @@ namespace DotAgent.Providers.Tools;
 public class LogData
 {
     [Description("Message to log")]
-    public required string LogMessage { get; set; }
+    public string LogMessage { get; set; }
 }
 public class LoggingTool() : ToolBase<LogData>("log_tool", "Logs message to console.")
 {
