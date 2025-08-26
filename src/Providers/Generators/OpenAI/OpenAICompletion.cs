@@ -6,11 +6,18 @@ using System.Text.Json;
 
 namespace DotAgent.Providers.Generators.OpenAI;
 
+/// <summary>
+/// Provides completion services using the OpenAI API.
+/// </summary>
 public class OpenAiCompletion(string apiKey, string model = "gpt-5-nano") : GeneratorBase
 {
-
     private static readonly HttpClient Http = new();
 
+    /// <summary>
+    /// Generates a response from the OpenAI API based on the provided request.
+    /// </summary>
+    /// <param name="request">The generator request containing memory and toolkit information.</param>
+    /// <returns>A <see cref="GenerationResponse"/> containing the generated message or function calls.</returns>
     protected override async Task<GenerationResponse> GenerateResponse(GeneratorRequest request)
     {
         try
@@ -113,6 +120,11 @@ public class OpenAiCompletion(string apiKey, string model = "gpt-5-nano") : Gene
         }
     }
 
+    /// <summary>
+    /// Converts a <see cref="ToolCallContent"/> object into an anonymous object suitable for OpenAI API.
+    /// </summary>
+    /// <param name="callContent">The tool call content to convert.</param>
+    /// <returns>An anonymous object representing the tool call.</returns>
     private object ConvertToolCalls(ToolCallContent callContent)
     {
         return callContent.Calls.Select(content => new
@@ -127,6 +139,11 @@ public class OpenAiCompletion(string apiKey, string model = "gpt-5-nano") : Gene
         }).ToArray();
     }
 
+    /// <summary>
+    /// Converts a <see cref="MemoryContent"/> object into an anonymous object suitable for OpenAI API.
+    /// </summary>
+    /// <param name="content">The memory content to convert.</param>
+    /// <returns>An anonymous object representing the content.</returns>
     private static object ConvertContent(MemoryContent content) =>
         (content switch
         {
@@ -142,14 +159,21 @@ public class OpenAiCompletion(string apiKey, string model = "gpt-5-nano") : Gene
             ToolCallContent _ => null,
             ToolResultContent tr => new[]
             {
-                new { type = "text",  text = tr.Result }
+                new { type = "text",  text = tr.Result } 
             },
             _ => new object[] { }
         })!;
     
+    /// <summary>
+    /// Replaces the last closing brace in a string with a specified replacement string.
+    /// </summary>
+    /// <param name="input">The input string.</param>
+    /// <param name="replacement">The string to replace the last closing brace with.</param>
+    /// <returns>The modified string.</returns>
     private static string ReplaceLastClosingBrace(string input, string replacement)
     {
         var index = input.LastIndexOf('}');
-        return index == -1 ? input : string.Concat(input.AsSpan(0, index),",", replacement, "}");
+        return index == -1 ? input : string.Concat(input.AsSpan(0, index),
+",", replacement, "}");
     }
 }
