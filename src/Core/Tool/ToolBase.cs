@@ -2,18 +2,11 @@ using System.Text.Json;
 using DotAgent.Core.Util;
 
 namespace DotAgent.Core.Tool;
-public abstract class ToolBase<TInputClass> : ITool
+public abstract class ToolBase<TInputClass>(string name, string description) : ITool
 {
-    public string Name { get; }
-    public string Description { get; }
-    public string InputFormat { get; }
-
-    protected ToolBase(string name, string description)
-    {
-        Name = name;
-        Description = description;
-        InputFormat = JsonUtilities.GenerateSchema(typeof(TInputClass), name, description);
-    }
+    public string Name { get; } = name;
+    public string Description { get; } = description;
+    public string InputFormat { get; protected set; } = JsonUtilities.GenerateSchema(typeof(TInputClass), name, description);
 
 
     public bool ValidateInput(string parametersJson)
@@ -21,7 +14,7 @@ public abstract class ToolBase<TInputClass> : ITool
         return JsonUtilities.ValidateJsonAgainstType<TInputClass>(parametersJson);
     }
 
-    public Task<string> ExecuteAsync(string parametersJson)
+    public Task<string?> ExecuteAsync(string parametersJson)
     {
         if (!ValidateInput(parametersJson))
            return Task.FromResult("Invalid parameters for tool.");
@@ -33,5 +26,5 @@ public abstract class ToolBase<TInputClass> : ITool
         return Execute(deserialized);
     }
 
-    protected abstract Task<string> Execute(TInputClass? parameters);
+    protected abstract Task<string?> Execute(TInputClass? parameters);
 }

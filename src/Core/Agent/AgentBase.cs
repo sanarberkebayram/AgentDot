@@ -10,12 +10,12 @@ public abstract class AgentBase : IAgent
 {
     public string Id { get; }
     public string SystemPrompt { get; set; }
-    public IMemory Memory { get; }
-    public IToolkit Toolkit { get; }
+    public IMemory Memory { get; protected set; }
+    public IToolkit Toolkit { get; protected set; }
     protected readonly IGenerator Generator;
     
     
-    protected AgentBase(string id, string systemPrompt, IMemory memory, IToolkit toolkit, IGenerator generator)
+    protected AgentBase(string id, string? systemPrompt, IMemory memory, IToolkit toolkit, IGenerator generator)
     {
         Id = id;
         Toolkit = toolkit;
@@ -24,14 +24,14 @@ public abstract class AgentBase : IAgent
         Generator = generator;
     }
 
-    private string BuildAgentPrompt(string systemPrompt)
+    private string BuildAgentPrompt(string? systemPrompt)
     {
-        return AgentPrompts.AGENT_PROMPT
+        return AgentPrompts.AgentPrompt
             .Replace("{{SYSTEM_PROMPT}}", systemPrompt)
             .Replace("{{TOOL_PROMPTS}}", Toolkit.ToolPrompt);
     }
 
-    public abstract Task<string> ProcessMessageAsync(string message);
-    public abstract Task<string> HandleGeneratorResponse(GenerationResponse response);
+    public abstract Task<string?> ProcessMessageAsync(string? message);
+    protected abstract Task<string?> HandleGeneratorResponse(GenerationResponse response);
     
 }

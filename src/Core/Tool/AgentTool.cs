@@ -3,30 +3,24 @@ using DotAgent.Core.Agent;
 namespace DotAgent.Core.Tool;
 
 [Serializable]
-public class AgentInput
+public class AgentInput(string? input)
 {
-    public string Input;
+    public required string? Input = input;
 }
 
-public class AgentTool : ToolBase<AgentInput>
+public class AgentTool(IAgent agent) : ToolBase<AgentInput>(agent.Id, GetDescription(agent))
 {
-    private readonly IAgent _agent;
-    public AgentTool(IAgent agent) : base(agent.Id, GetDescription(agent))
-    {
-        _agent = agent;
-    }
-
     private static string GetDescription(IAgent agent)
     {
-        return Prompts.AgentPrompts.AGENT_TOOL_PROMPT
+        return Prompts.AgentPrompts.AgentToolPrompt
             .Replace("{{SYSTEM_PROMPT}}", agent.SystemPrompt)
             .Replace("{{AGENT_ID}}", agent.Id);
     }
 
-    protected override async Task<string> Execute(AgentInput? parameters)
+    protected override async Task<string?> Execute(AgentInput? parameters)
     {
         if (parameters == null)
             return "Invalid parameters for AgentTool. Expected a 'input' string parameter.";
-        return await _agent.ProcessMessageAsync(parameters.Input);
+        return await agent.ProcessMessageAsync(parameters.Input);
     }
 }

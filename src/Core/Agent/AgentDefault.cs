@@ -3,35 +3,42 @@ using DotAgent.Core.Memory;
 using DotAgent.Core.Models;
 using DotAgent.Core.Toolkit;
 using DotAgent.Logging;
-using DotAgent.Models;
 
 namespace DotAgent.Core.Agent;
 
-public class AgentDefault(string id, string systemPrompt, IGenerator generator, IMemory? memory, IToolkit? toolkit)
-    : AgentBase(id, systemPrompt, memory ?? new MemoryBase(systemPrompt), toolkit ?? new Toolkit.Toolkit(), generator)
+public class AgentDefault : AgentBase
 {
-    private readonly int _maxErrorCount = 3;
-    public override async Task<string> ProcessMessageAsync(string message)
+    public AgentDefault(string id, string? systemPrompt, IGenerator generator, IMemory? memory = null, IToolkit? toolkit = null) :
+        base(id, systemPrompt, memory ?? new MemoryBase(systemPrompt), toolkit ?? new Toolkit.Toolkit(), generator)
+    {
+    }
+
+private readonly int _maxErrorCount = 3;
+    public override async Task<string?> ProcessMessageAsync(string? message)
     {
         if (Generator == null)
         {
             Logger.LogAsync(Logger.LogType.Error,$"AgentDefault {Id}", "Generator is not set.").Wait();
             throw new Exception("Generator is not set.");
         }
-        Memory.AddMessage(new ChatMessage(){Role = ChatMessageRole.User, Content = message});
+        Memory.AddMessage(new MemoryData(){Role = Models.Memory.User, Content = new TextContent(message)});
         
-        var initialResponse = await Generator.GenerateAsync(await Memory.GetHistoryAsync());
-        Memory.AddMessage(new ChatMessage(){Role = ChatMessageRole.Assistant, Content = initialResponse.Message });
+        var initialResponse = await Generator.GenerateAsync(new GeneratorRequest(){Memory = Memory, Toolkit = Toolkit});
+        AddGeneratorMessageToMemory(initialResponse);
         
         return await HandleGeneratorResponse(initialResponse);
     }
+
     
-    public override async Task<string> HandleGeneratorResponse(GenerationResponse response)
+    protected override async Task<string?> HandleGeneratorResponse(GenerationResponse response)
     {
+        if (!string.IsNullOrWhiteSpace(response.Error))
+            return response.Error;
+        
         var errorCount = 0;
         do
         {
-            if (response.Type == ResponseType.ToolCalling)
+            if (response.FunctionCalls is { Length: > 0 })
             {
                 var hasError = await HandleFunctionCalling(response);
                 if (hasError)
@@ -42,13 +49,12 @@ public class AgentDefault(string id, string systemPrompt, IGenerator generator, 
                 return response.Message;
             }
             
-            response = await Generator.GenerateAsync(await Memory.GetHistoryAsync());
-            Memory.AddMessage(new ChatMessage(){Role = ChatMessageRole.Assistant, Content = response.Message });
-            
+            response = await Generator.GenerateAsync(new GeneratorRequest(){Memory = Memory, Toolkit = Toolkit});
+            AddGeneratorMessageToMemory(response);
             
             if (errorCount > _maxErrorCount)
             {
-                Memory.AddMessage(new ChatMessage(){Role = ChatMessageRole.User, Content = "Maximum error count reached. Exiting."});
+                Memory.AddMessage(new MemoryData(){Role = Models.Memory.User, Content = new TextContent("Maximum error count reached. Exiting.")});
                 return "Maximum error count reached. Exiting.";
             }
         } while (true);
@@ -60,12 +66,25 @@ public class AgentDefault(string id, string systemPrompt, IGenerator generator, 
         foreach (var funcCall in response.FunctionCalls)
         {
             var result = await Toolkit.ExecuteToolAsync(funcCall.Name, funcCall.Parameters);
-            Memory.AddMessage(new ToolMessage(){Role = ChatMessageRole.Tool, Content = result, ToolCallId = funcCall.Id});
+            Memory.AddMessage(new MemoryData()
+            {
+                Role= Models.Memory.Tool,
+                Content = new ToolResultContent(funcCall.Id, result),
+            });
             
-            if ( result.Contains("Error") || result.Contains("error") || result.Contains("fail") || result.Contains("FAIL"))
+            if (result.Contains("Error") || result.Contains("error") || result.Contains("fail") || result.Contains("FAIL"))
                 hasError = true;
         }
 
         return hasError;
+    }
+    
+    private void AddGeneratorMessageToMemory(GenerationResponse response)
+    {
+        if(!string.IsNullOrWhiteSpace(response.Message))
+            Memory.AddMessage(new MemoryData(){Role = Models.Memory.Assistant, Content = new TextContent(response.Message) });
+        
+        if (response.FunctionCalls is { Length: > 0 })
+            Memory.AddMessage(new MemoryData(){Role = Models.Memory.Assistant, Content = new ToolCallContent(response.FunctionCalls) });
     }
 }

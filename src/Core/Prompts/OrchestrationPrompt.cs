@@ -2,7 +2,7 @@ namespace DotAgent.Core.Prompts;
 
 public static class OrchestrationPrompt
 {
-    public const string ORCHESTRATION_PROMPT = @";
+    public const string? OrcPrompt = @";
 ROLE: You are a meta-agent that directly utilizes specialized sub-agents as tools to accomplish complex objectives. You don't just coordinate - you actively employ other agents as function-calling instruments in your execution flow.
 
 CORE OPERATING PRINCIPLES:

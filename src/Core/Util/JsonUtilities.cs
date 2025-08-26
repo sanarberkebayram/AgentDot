@@ -6,11 +6,11 @@ namespace DotAgent.Core.Util;
 
 public static class JsonUtilities
 {
-    public static string GenerateSchema(Type type,string name, string description)
+    public static string GenerateSchema(Type type, string name, string description)
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        var schema = new JsonSchema
+        var function = new JsonSchema
         {
             Name = name ?? type.Name,
             Description = description ?? $"Auto-generated schema for {type.Name}",
@@ -25,28 +25,34 @@ public static class JsonUtilities
         foreach (var property in type.GetProperties())
         {
             var propertySchema = GetPropertySchema(property);
-            schema.Parameters.Properties.Add(property.Name, propertySchema);
+            function.Parameters.Properties.Add(property.Name, propertySchema);
 
-            // Check if nullable:
             bool isNullable = (property.PropertyType.IsClass && property.PropertyType != typeof(string)) ||
                               (Nullable.GetUnderlyingType(property.PropertyType) != null);
 
-            // Also, arrays (List<T>) are technically reference types 
-            bool isArray = property.PropertyType.IsGenericType && 
+            bool isArray = property.PropertyType.IsGenericType &&
                            property.PropertyType.GetGenericTypeDefinition() == typeof(List<>);
 
             if (!isNullable || isArray)
             {
-                schema.Parameters.Required.Add(property.Name);
+                function.Parameters.Required.Add(property.Name);
             }
         }
 
-        return JsonSerializer.Serialize(schema, new JsonSerializerOptions
+        // 👇 wrap correctly in { "type": "function", "function": { ... } }
+        var tool = new
+        {
+            type = "function",
+            function
+        };
+
+        return JsonSerializer.Serialize(tool, new JsonSerializerOptions
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
     }
+
     private static Property GetPropertySchema(PropertyInfo property)
     {
         var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
@@ -60,7 +66,7 @@ public static class JsonUtilities
 
         var propertySchema = new Property
         {
-            Description = description
+            Description = description ?? $"Auto-generated schema for {property.Name}",
         };
 
         if (propertyType == typeof(string))
@@ -125,7 +131,6 @@ public static class JsonUtilities
             return false;
         }
     }
-
     public static bool ValidateJsonAgainstType<T>(string json)
     {
         try
@@ -157,7 +162,6 @@ public static class JsonUtilities
             return false;
         }
     }
-
     private static bool IsNullable(Type type)
     {
         // Nullable value type
@@ -175,6 +179,7 @@ public static class JsonUtilities
         public string Name { get; set; }
         public string Description { get; set; }
         public Parameters Parameters { get; set; }
+        public string Type { get; set; }
     }
 
     public class Parameters

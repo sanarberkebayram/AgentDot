@@ -7,5 +7,5 @@ public interface ITool
     string InputFormat { get; }
     
     protected bool ValidateInput(string parametersJson);
-    Task<string> ExecuteAsync(string parametersJson);
+    Task<string?> ExecuteAsync(string parametersJson);
 }

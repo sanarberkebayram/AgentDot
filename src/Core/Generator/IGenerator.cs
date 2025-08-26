@@ -4,5 +4,5 @@ namespace DotAgent.Core.Generator;
 
 public interface IGenerator
 {
-    Task<GenerationResponse> GenerateAsync(GeneratorParams @params);
+    Task<GenerationResponse> GenerateAsync(GeneratorRequest request);
 }

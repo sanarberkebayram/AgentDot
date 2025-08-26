@@ -8,18 +8,18 @@ namespace DotAgent.Core.Orchestration;
 
 public class OrchestrationBase : AgentDefault, IOrchestration
 {
-    public OrchestrationBase(string id, string systemPrompt, IGenerator generator, IMemory? memory, IToolkit? toolkit)
+    public OrchestrationBase(string id, string? systemPrompt, IGenerator generator, IMemory? memory, IToolkit? toolkit)
      : base(id, systemPrompt, generator, memory, toolkit)
     {
     }
 
-    public OrchestrationBase(string systemPrompt, IGenerator generator)
-        : base(Guid.NewGuid().ToString(), systemPrompt, generator, null, null)
+    public OrchestrationBase(string? systemPrompt, IGenerator generator)
+        : base(Guid.NewGuid().ToString(), systemPrompt, generator)
     {
     }
 
     public OrchestrationBase(IGenerator generator)
-        : base(Guid.NewGuid().ToString(), Prompts.OrchestrationPrompt.ORCHESTRATION_PROMPT, generator, null, null)
+        : base(Guid.NewGuid().ToString(), Prompts.OrchestrationPrompt.OrcPrompt, generator)
     {
     }
 

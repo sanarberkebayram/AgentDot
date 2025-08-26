@@ -9,5 +9,5 @@ public interface IAgent
     string SystemPrompt { get; }
     IMemory Memory { get; }
     IToolkit Toolkit { get; }
-    Task<string> ProcessMessageAsync(string message);
+    Task<string?> ProcessMessageAsync(string? message);
 }
