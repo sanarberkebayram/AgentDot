@@ -1,45 +1,56 @@
 using DotAgent.Core.Agent;
 
-namespace DotAgent.Core.Tool;
-
-/// <summary>
-/// Represents the input for an agent tool.
-/// </summary>
-[Serializable]
-public class AgentInput(string? input)
+namespace DotAgent.Core.Tool
 {
     /// <summary>
-    /// The input string for the agent.
+    /// Represents the input for an agent tool.
     /// </summary>
-    public required string? Input = input;
-}
-
-/// <summary>
-/// Provides a tool that allows an agent to interact with another agent.
-/// </summary>
-public class AgentTool(IAgent agent) : ToolBase<AgentInput>(agent.Id, GetDescription(agent))
-{
-    /// <summary>
-    /// Generates a description for the agent tool based on the provided agent.
-    /// </summary>
-    /// <param name="agent">The agent associated with this tool.</param>
-    /// <returns>A string description of the agent tool.</returns>
-    private static string GetDescription(IAgent agent)
+    [Serializable]
+    public class AgentInput
     {
-        return Prompts.AgentPrompts.AgentToolPrompt
-            .Replace("{{SYSTEM_PROMPT}}", agent.SystemPrompt)
-            .Replace("{{AGENT_ID}}", agent.Id);
+        public AgentInput(string? input)
+        {
+            Input = input;
+        }
+        /// <summary>
+        /// The input string for the agent.
+        /// </summary>
+        public required string? Input;
     }
 
     /// <summary>
-    /// Executes the agent tool, processing the input message with the associated agent.
+    /// Provides a tool that allows an agent to interact with another agent.
     /// </summary>
-    /// <param name="parameters">The input parameters for the agent tool, containing the message to process.</param>
-    /// <returns>A task that represents the asynchronous operation, returning the response from the agent.</returns>
-    protected override async Task<string?> Execute(AgentInput? parameters)
+    public class AgentTool : ToolBase<AgentInput>
     {
-        if (parameters == null)
-            return "Invalid parameters for AgentTool. Expected a 'input' string parameter.";
-        return await agent.ProcessMessageAsync(parameters.Input);
+        private readonly IAgent _agent;
+        public AgentTool(IAgent agent) : base(agent.Id, GetDescription(agent))
+        {
+            _agent = agent;
+        }
+        /// <summary>
+        /// Generates a description for the agent tool based on the provided agent.
+        /// </summary>
+        /// <param name="agent">The agent associated with this tool.</param>
+        /// <returns>A string description of the agent tool.</returns>
+        private static string GetDescription(IAgent agent)
+        {
+            return Prompts.AgentPrompts.AgentToolPrompt
+                .Replace("{{SYSTEM_PROMPT}}", agent.SystemPrompt)
+                .Replace("{{AGENT_ID}}", agent.Id);
+        }
+
+        /// <summary>
+        /// Executes the agent tool, processing the input message with the associated agent.
+        /// </summary>
+        /// <param name="parameters">The input parameters for the agent tool, containing the message to process.</param>
+        /// <returns>A task that represents the asynchronous operation, returning the response from the agent.</returns>
+        protected override async Task<string?> Execute(AgentInput? parameters)
+        {
+            if (parameters == null)
+                return "Invalid parameters for AgentTool. Expected a 'input' string parameter.";
+            return await _agent.ProcessMessageAsync(parameters.Input);
+        }
     }
 }
+

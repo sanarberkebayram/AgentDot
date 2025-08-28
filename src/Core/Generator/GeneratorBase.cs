@@ -1,39 +1,40 @@
 using DotAgent.Core.Models;
 using DotAgent.Logging;
 
-namespace DotAgent.Core.Generator;
-
-public abstract class GeneratorBase : IGenerator
+namespace DotAgent.Core.Generator
 {
-    private readonly bool _log;
-
-    public GeneratorBase(bool log = false)
+    public abstract class GeneratorBase : IGenerator
     {
-        _log = log;
-    }
+        private readonly bool _log;
 
-    protected abstract Task<GenerationResponse> GenerateResponse(GeneratorRequest request);
-
-    public async Task<GenerationResponse> GenerateAsync(GeneratorRequest request)
-    {
-        try
+        public GeneratorBase(bool log = false)
         {
-            return await GenerateResponse(request);
+            _log = log;
         }
-        catch (Exception ex)
+
+        protected abstract Task<GenerationResponse> GenerateResponse(GeneratorRequest request);
+
+        public async Task<GenerationResponse> GenerateAsync(GeneratorRequest request)
         {
-            if (!_log) throw;
-            
-            var messages = await request.Memory?.GetHistoryAsync()!;
-            await Logger.LogAsync(
-                Logger.LogType.Error,
-                $"Generator Failed",
-                $"{ex.Message} with message history:\n" +
-                $"{string.Join("\n", messages.Select(m => $"{m.Role}: {m.Content} \n"))}" +
-                $"Stack Trace: {ex.StackTrace}"
-            );
-            
-            throw;
+            try
+            {
+                return await GenerateResponse(request);
+            }
+            catch (Exception ex)
+            {
+                if (!_log) throw;
+
+                var messages = await request.Memory?.GetHistoryAsync()!;
+                await Logger.LogAsync(
+                    Logger.LogType.Error,
+                    $"Generator Failed",
+                    $"{ex.Message} with message history:\n" +
+                    $"{string.Join("\n", messages.Select(m => $"{m.Role}: {m.Content} \n"))}" +
+                    $"Stack Trace: {ex.StackTrace}"
+                );
+
+                throw;
+            }
         }
     }
 }

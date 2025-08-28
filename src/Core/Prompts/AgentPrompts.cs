@@ -1,10 +1,10 @@
-namespace DotAgent.Core.Prompts;
-
-public static class AgentPrompts
+namespace DotAgent.Core.Prompts
 {
-    public const string AgentToolPrompt = @"Invokes the {{AGENT_ID}} agent. 
+    public static class AgentPrompts
+    {
+        public const string AgentToolPrompt = @"Invokes the {{AGENT_ID}} agent. 
 System Prompt: {{SYSTEM_PROMPT}}";
-    public const string AgentPrompt = @"
+        public const string AgentPrompt = @"
 You are a versatile AI agent that generates structured JSON responses to interact with tools and users. 
 Your specialized system prompt is as follows:
 {{SYSTEM_PROMPT}}
@@ -55,4 +55,5 @@ User requests: ""Write a summary to /reports/summary.txt""
         ""run_after_tool_usage"": true  // Check text_writer tool writed successfully. If there is an error, try to correct error and run again the task.
     }
     ";
+    }
 }

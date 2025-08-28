@@ -1,8 +1,9 @@
 using DotAgent.Core.Agent;
 
-namespace DotAgent.Core.Orchestration;
-
-public interface IOrchestration : IAgent
+namespace DotAgent.Core.Orchestration
 {
-    void AddAgent(IAgent agent);
+    public interface IOrchestration : IAgent
+    {
+        void AddAgent(IAgent agent);
+    }
 }

@@ -1,32 +1,33 @@
-namespace DotAgent.Logging;
-
-public static class Logger
+namespace DotAgent.Logging
 {
-    private const string LogDirectory = "logs";
-    private static readonly string SessionLogFileName;
-    private const string LogSeparator = "\n\n---\n\n"; // Separator for log entries
-
-    static Logger()
+    public static class Logger
     {
-        if (!Directory.Exists(LogDirectory))
+        private const string LogDirectory = "logs";
+        private static readonly string SessionLogFileName;
+        private const string LogSeparator = "\n\n---\n\n"; // Separator for log entries
+
+        static Logger()
         {
-            Directory.CreateDirectory(LogDirectory);
+            if (!Directory.Exists(LogDirectory))
+            {
+                Directory.CreateDirectory(LogDirectory);
+            }
+            // Generate a unique file name for the current session
+            SessionLogFileName = Path.Combine(LogDirectory, $"session_log_{DateTime.Now:yyyyMMdd_HHmmss}.md");
         }
-        // Generate a unique file name for the current session
-        SessionLogFileName = Path.Combine(LogDirectory, $"session_log_{DateTime.Now:yyyyMMdd_HHmmss}.md");
-    }
 
-    public static async Task LogAsync(LogType logType, string title, string content)
-    {
-        var logContent = $"#[{logType.ToString().ToUpper()}] {title}:\n{content}{LogSeparator}";
-        Console.WriteLine(logContent);
-        await File.AppendAllTextAsync(SessionLogFileName, logContent);
-    }
-    
-    public enum LogType
-    {
-        Info,
-        Warning,
-        Error
+        public static async Task LogAsync(LogType logType, string title, string content)
+        {
+            var logContent = $"#[{logType.ToString().ToUpper()}] {title}:\n{content}{LogSeparator}";
+            Console.WriteLine(logContent);
+            await File.AppendAllTextAsync(SessionLogFileName, logContent);
+        }
+
+        public enum LogType
+        {
+            Info,
+            Warning,
+            Error
+        }
     }
 }
